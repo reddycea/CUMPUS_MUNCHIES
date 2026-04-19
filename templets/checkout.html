@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ store.name }} - Checkout | Campus Munchies</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Removed PayPal SDK -->
+    <script src="https://js.stripe.com/v3/"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://wallpaperaccess.com/full/5674818.jpg') no-repeat center center/cover;
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .logo { 
+            font-weight: 700; 
+            font-size: 1.6rem; 
+            background: linear-gradient(45deg, #ff9a3d, #ff6b6b);
+            -webkit-background-clip: text; 
+            background-clip: text;
+            -webkit-text-fill-color: transparent; 
+            color: transparent;
+        }
+
+        nav a { 
+            margin-left: 2rem; 
+            font-weight: 500; 
+            transition: all 0.3s ease; 
+            display: inline-flex; 
+            align-items: center; 
+            padding: 8px 15px; 
+            border-radius: 5px; 
+            color: #fff;
+            text-decoration: none;
+        }
+        
+        nav a:hover { 
+            color: #ff9a3d; 
+            background: rgba(255,255,255,0.05); 
+            transform: translateY(-2px); 
+        }
+
+        .checkout-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+        }
+        
+        .checkout-main {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .checkout-sidebar {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #fff;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #ff9a3d 0%, #ff6b6b 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+        
+        h3 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 400;
+            color: #ddd;
+        }
+        
+        .section-title {
+            color: #ff9a3d;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .cart-items {
+            margin-bottom: 25px;
+        }
+        
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .cart-item-details {
+            flex: 1;
+            margin-left: 15px;
+        }
+        
+        .cart-item-details h4 {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .cart-item-details p {
+            font-size: 14px;
+            color: #ddd;
+        }
+        
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .quantity-controls button {
+            padding: 5px 10px;
+            border: none;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .quantity-controls button:hover {
+            background: #ff5252;
+            transform: scale(1.05);
+        }
+        
+        .quantity-controls span {
+            font-weight: 600;
+            color: #fff;
+            min-width: 30px;
+            text-align: center;
+        }
+        
+        .remove-btn {
+            margin-left: 15px;
+            background: transparent;
+            border: none;
+            color: #ff3b3b;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .remove-btn:hover {
+            color: #ff0000;
+            transform: scale(1.1);
+        }
+        
+        .total-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .total-final {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff9a3d;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+        
+        .payment-methods, .delivery-method {
+            margin-top: 30px;
+        }
+        
+        .method-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .method-card {
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            transition: 0.3s;
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            border: 2px solid transparent;
+        }
+        
+        .method-card img {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .method-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .method-card.active {
+            background: linear-gradient(135deg, #ff9a3d 0%, #ff6b6b 100%);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .payment-form {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .payment-form.active {
+            display: block;
+        }
+        
+        .checkout-btn {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            margin-top: 25px;
+            background: linear-gradient(135deg, #ff9a3d 0%, #ff6b6b 100%);
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .checkout-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
+        }
+        
+        .checkout-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: rgba(40, 40, 40, 0.95);
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            animation: fadeIn 0.5s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #fff;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #ff9a3d;
+            box-shadow: 0 0 0 2px rgba(255, 154, 61, 0.2);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        #card-element {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #card-element--focus {
+            border-color: #ff9a3d;
+            box-shadow: 0 0 0 2px rgba(255, 154, 61, 0.2);
+        }
+
+        #card-errors {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            text-decoration: none;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-2px);
+        }
+        
+        .error-message {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .empty-cart {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .empty-cart i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .card-input-container {
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .card-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .delivery-address-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: black;
+            font-size: 16px;
+        }
+
+        .delivery-address-select:focus {
+            outline: none;
+            border-color: #ff9a3d;
+            box-shadow: 0 0 0 2px rgba(255, 154, 61, 0.2);
+        }
+        .delivery-address-select option {
+        color: black;
+        background: white;
+        }
+
+        .status-polling {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .checkout-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .checkout-sidebar {
+                position: static;
+            }
+            
+            header {
+                padding: 1rem;
+            }
+            
+            nav a {
+                margin-left: 1rem;
+                padding: 6px 12px;
+                font-size: 0.9rem;
+            }
+            
+            .method-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .card-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .method-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .cart-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .quantity-controls {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Campus Munchies</div>
+        <nav>
+            <a href="/campusmunchies.com/"><i class="fas fa-home"></i> Home</a>
+            <a href="/campusmunchies.com/orders"><i class="fas fa-receipt"></i> My Orders</a>
+            <a href="/campusmunchies.com/profile"><i class="fas fa-user"></i> Profile</a>
+        </nav>
+    </header>
+
+    <div class="checkout-container">
+        <div class="checkout-main">
+            <a href="/campusmunchies.com/{{ store.name.lower() }}/menu" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Back to Menu
+            </a>
+            
+            <h1>Checkout</h1>
+            <h3 id="shop-name">Store: {{ store.name }}</h3>
+
+            <!-- Cart Items -->
+            <div class="section-title">
+                <i class="fas fa-shopping-cart"></i>
+                <h2>Order Summary</h2>
+            </div>
+            <div class="cart-items" id="cart-items">
+                <!-- Cart items will be populated dynamically -->
+            </div>
+
+            <!-- Delivery Method -->
+            <div class="delivery-method">
+                <div class="section-title">
+                    <i class="fas fa-truck"></i>
+                    <h2>Delivery Option</h2>
+                </div>
+                <div class="method-options" id="delivery-options">
+                    <div class="method-card active" data-method="pickup">
+                        <i class="fas fa-box"></i>
+                        <span>Pickup</span>
+                    </div>
+                    <div class="method-card" data-method="sit_in">
+                        <i class="fas fa-utensils"></i>
+                        <span>Sit In</span>
+                    </div>
+                    <div class="method-card" data-method="delivery">
+                        <i class="fas fa-truck"></i>
+                        <span>Delivery</span>
+                    </div>
+                </div>
+                <div class="form-group" id="delivery-address-container" style="display:none;">
+                    <label for="delivery-address">Delivery Address:</label>
+                    <select class="delivery-address-select" id="delivery-address">
+                        <option value="">Select delivery address</option>
+                        <option value="Dblock building">Dblock building</option>
+                        <option value="Library building">Library building</option>
+                        <option value="B Lab">B Lab</option>
+                        <option value="Printing center">Printing center</option>
+                        <option value="Admin building">Admin building</option>
+                        <option value="HP lap">HP lap</option>
+                        <option value="West residence gate">West residence gate</option>
+                        <option value="Isaqalo east residence gate">Isaqalo east residence gate</option>
+                        <option value="Isphetho residence gate">Isphetho residence gate</option>
+                        <option value="Madiba residence gate">Madiba residence gate</option>
+                    </select>
+                    <div class="error-message" id="delivery-address-error">Please select a delivery address</div>
+                </div>
+            </div>
+
+            <!-- Payment Methods -->
+            <div class="payment-methods">
+                <div class="section-title">
+                    <i class="fas fa-credit-card"></i>
+                    <h2>Payment Method</h2>
+                </div>
+                <div class="method-options" id="payment-options">
+                    <div class="method-card active" data-method="cash">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>Cash</span>
+                    </div>
+                    <div class="method-card" data-method="card">
+                        <i class="fas fa-credit-card"></i>
+                        <span>Card (Stripe)</span>
+                    </div>
+                    <div class="method-card" data-method="mpesa">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>M-Pesa</span>
+                    </div>
+                </div>
+                
+                <!-- Card Payment Form -->
+                <div class="payment-form" id="card-form">
+                    <div class="form-group">
+                        <label for="card-name">Name on Card</label>
+                        <input type="text" id="card-name" placeholder="John Doe">
+                        <div class="error-message" id="card-name-error">Please enter the name on your card</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="card-element">Card Details</label>
+                        <div id="card-element">
+                            <!-- Stripe Elements will create form elements here -->
+                        </div>
+                        <div id="card-errors" role="alert"></div>
+                    </div>
+                </div>
+                
+                <!-- M-Pesa Payment Form -->
+                <div class="payment-form" id="mpesa-form">
+                    <div class="form-group">
+                        <label for="mpesa-phone">M-Pesa Phone Number</label>
+                        <input type="tel" id="mpesa-phone" placeholder="07XXXXXXXX" maxlength="10">
+                        <div class="error-message" id="mpesa-phone-error">Please enter a valid South African phone number</div>
+                    </div>
+                    <div class="form-group">
+                        <p>You will receive a payment prompt on your phone after placing the order.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary Sidebar -->
+        <div class="checkout-sidebar">
+            <div class="section-title">
+                <i class="fas fa-receipt"></i>
+                <h2>Order Total</h2>
+            </div>
+            
+            <div class="total-section">
+                <div class="total-row total-final">
+                    <span>Total:</span>
+                    <span id="total-amount">R0.00</span>
+                </div>
+            </div>
+
+            <button class="checkout-btn" id="checkout-btn" disabled>
+                <i class="fas fa-lock"></i>
+                Place Order
+            </button>
+            
+            <div style="text-align: center; margin-top: 15px; color: rgba(255,255,255,0.7); font-size: 14px;">
+                <i class="fas fa-shield-alt"></i> Secure Payment
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="modal">
+        <div class="modal-content">
+            <h2 style="color: #ff9a3d; margin-bottom: 20px;">
+                <i class="fas fa-check-circle"></i> Order Confirmed!
+            </h2>
+            <div id="modal-details" style="margin-bottom: 20px; line-height: 1.6;"></div>
+            <div id="payment-instructions" style="margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;"></div>
+            <div id="mpesa-status" class="status-polling" style="display:none;"></div>
+            <button onclick="closeModal()" class="checkout-btn" style="margin-top: 20px;">
+                <i class="fas fa-home"></i> Back to Home
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        const state = {
+            cart: [],
+            storeName: '{{ store.name }}',
+            storeId: {{ store.id }},
+            selectedDelivery: 'pickup',
+            selectedPayment: 'cash',
+            stripe: null,
+            cardElement: null,
+            pollInterval: null,
+            currentOrderNumber: null,
+        };
+
+        // DOM Elements
+        const elements = {
+            cartItems: document.getElementById('cart-items'),
+            totalAmount: document.getElementById('total-amount'),
+            checkoutBtn: document.getElementById('checkout-btn'),
+            modal: document.getElementById('confirmation-modal'),
+            modalDetails: document.getElementById('modal-details'),
+            paymentInstructions: document.getElementById('payment-instructions'),
+            mpesaStatus: document.getElementById('mpesa-status'),
+            paymentForms: {
+                card: document.getElementById('card-form'),
+                mpesa: document.getElementById('mpesa-form')
+            }
+        };
+
+        // Utility Functions
+        const utils = {
+            formatPrice(price) {
+                return `R${parseFloat(price).toFixed(2)}`;
+            },
+
+            getCSRFToken() {
+                return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            },
+
+            validatePhone(phone) {
+                const cleaned = phone.replace(/[^\d]/g, '');
+                return /^0[6-8][0-9]{8}$/.test(cleaned);
+            },
+
+            formatPhone(phone) {
+                const cleaned = phone.replace(/[^\d]/g, '');
+                if (cleaned.startsWith('0')) {
+                    return '+27' + cleaned.substring(1);
+                }
+                return cleaned;
+            },
+
+            showError(elementId, message) {
+                const errorElement = document.getElementById(elementId);
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+            },
+
+            hideError(elementId) {
+                const errorElement = document.getElementById(elementId);
+                errorElement.style.display = 'none';
+            },
+
+            calculateTotal() {
+                return state.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            },
+
+            updateTotal() {
+                const total = this.calculateTotal();
+                elements.totalAmount.textContent = this.formatPrice(total);
+            },
+
+            showLoading(button) {
+                button.innerHTML = '<div class="loading-spinner"></div> Processing...';
+                button.disabled = true;
+            },
+
+            hideLoading(button, text = '<i class="fas fa-lock"></i> Place Order') {
+                button.innerHTML = text;
+                button.disabled = false;
+            }
+        };
+
+        // Cart Management
+        async function loadCart() {
+            try {
+                const response = await fetch('/campusmunchies.com/api/cart');
+                if (!response.ok) throw new Error('Failed to load cart');
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Extract items from all stores in cart
+                    state.cart = data.cart.stores.flatMap(store => 
+                        store.items.map(item => ({
+                            ...item,
+                            store_id: store.store_id
+                        }))
+                    );
+                    renderCart();
+                }
+            } catch (error) {
+                console.error('Error loading cart:', error);
+                showEmptyCart();
+            }
+        }
+
+        function renderCart() {
+            elements.cartItems.innerHTML = '';
+            
+            if (state.cart.length === 0) {
+                showEmptyCart();
+                return;
+            }
+
+            state.cart.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'cart-item';
+                itemElement.innerHTML = `
+                    <div class="cart-item-details">
+                        <h4>${escapeHtml(item.name)}</h4>
+                        <p>${utils.formatPrice(item.price)} each</p>
+                    </div>
+                    <div class="quantity-controls">
+                        <span>Qty: ${item.quantity}</span>
+                    </div>
+                `;
+                elements.cartItems.appendChild(itemElement);
+            });
+
+            utils.updateTotal();
+            elements.checkoutBtn.disabled = false;
+        }
+
+        function showEmptyCart() {
+            elements.cartItems.innerHTML = `
+                <div class="empty-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h3>Your cart is empty</h3>
+                    <p>Add some delicious items to get started!</p>
+                    <a href="/campusmunchies.com/${state.storeName.toLowerCase()}/menu" class="back-btn" style="margin-top: 15px;">
+                        <i class="fas fa-utensils"></i> Browse Menu
+                    </a>
+                </div>
+            `;
+            elements.checkoutBtn.disabled = true;
+        }
+
+        function escapeHtml(unsafe) {
+            if (unsafe === null || unsafe === undefined) return '';
+            return unsafe
+                .toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+function setupDeliveryOptions() {
+    const deliveryCards = document.querySelectorAll('#delivery-options .method-card');
+    const addressContainer = document.getElementById('delivery-address-container');
+    const cashPaymentCard = document.querySelector('[data-method="cash"]');
+
+    deliveryCards.forEach(card => {
+        card.addEventListener('click', () => {
+            // If selecting delivery and payment is cash, prevent it
+            if (card.dataset.method === 'delivery' && state.selectedPayment === 'cash') {
+                alert("⚠️ Cash payment is not allowed for delivery orders. Please choose card or M-Pesa payment method first.");
+                return;
+            }
+
+            deliveryCards.forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            state.selectedDelivery = card.dataset.method;
+
+            addressContainer.style.display = state.selectedDelivery === 'delivery' ? 'block' : 'none';
+            
+            // Clear address when switching away from delivery
+            if (state.selectedDelivery !== 'delivery') {
+                document.getElementById('delivery-address').value = '';
+            }
+            
+            utils.hideError('delivery-address-error');
+        });
+    });
+}
+
+function setupPaymentOptions() {
+    const paymentCards = document.querySelectorAll('#payment-options .method-card');
+
+    paymentCards.forEach(card => {
+        card.addEventListener('click', () => {
+            // If trying to select cash with delivery address, prevent it
+            if (card.dataset.method === 'cash' && document.getElementById('delivery-address').value) {
+                alert("⚠️ Cash payment cannot be used with delivery address. Please choose pickup or sit-in first.");
+                return;
+            }
+
+            paymentCards.forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            state.selectedPayment = card.dataset.method;
+            
+            Object.values(elements.paymentForms).forEach(form => {
+                form.classList.remove('active');
+            });
+            
+            if (state.selectedPayment !== 'cash') {
+                elements.paymentForms[state.selectedPayment].classList.add('active');
+            }
+
+            if (state.selectedPayment === 'card') {
+                setupStripeElements();
+            }
+            
+            // Clear errors
+            utils.hideError('mpesa-phone-error');
+            utils.hideError('card-name-error');
+            document.getElementById('card-errors').textContent = '';
+        });
+    });
+}
+        function setupStripeElements() {
+            if (state.cardElement) return;
+
+            // Initialize Stripe
+            state.stripe = Stripe('{{ stripe_public_key }}');
+            
+            const stripeElements = state.stripe.elements();
+            state.cardElement = stripeElements.create('card', {
+                style: {
+                    hidePostalCode: true,  // This line hides the postal code field
+                    base: {
+                        color: '#fff',
+                        fontFamily: '"Poppins", sans-serif',
+                        fontSmoothing: 'antialiased',
+                        fontSize: '16px',
+                        '::placeholder': {
+                            color: '#ddd'
+                        }
+                    },
+                    invalid: {
+                        color: '#ff6b6b'
+                    }
+                }
+            });
+
+            state.cardElement.mount('#card-element');
+
+            state.cardElement.on('change', (event) => {
+                const displayError = document.getElementById('card-errors');
+                if (event.error) {
+                    displayError.textContent = event.error.message;
+                } else {
+                    displayError.textContent = '';
+                }
+            });
+        }
+
+// Form Validation
+function validateForm() {
+    let isValid = true;
+
+    if (state.cart.length === 0) {
+        alert('Your cart is empty!');
+        return false;
+    }
+
+    // Clear all errors first
+    utils.hideError('delivery-address-error');
+    utils.hideError('mpesa-phone-error');
+    utils.hideError('card-name-error');
+    document.getElementById('card-errors').textContent = '';
+
+    // Delivery address validation
+    if (state.selectedDelivery === 'delivery') {
+        const deliveryAddress = document.getElementById('delivery-address').value;
+        if (!deliveryAddress) {
+            utils.showError('delivery-address-error', 'Please select a delivery address');
+            isValid = false;
+        }
+    }
+
+    // Payment method specific validations
+    if (state.selectedPayment === 'mpesa') {
+        const mpesaPhone = document.getElementById('mpesa-phone').value.trim();
+        if (!mpesaPhone) {
+            utils.showError('mpesa-phone-error', 'Please enter your phone number');
+            isValid = false;
+        } else if (!utils.validatePhone(mpesaPhone)) {
+            utils.showError('mpesa-phone-error', 'Please enter a valid South African phone number');
+            isValid = false;
+        }
+    }
+
+    if (state.selectedPayment === 'card') {
+        const cardName = document.getElementById('card-name').value.trim();
+        if (!cardName) {
+            utils.showError('card-name-error', 'Please enter the name on your card');
+            isValid = false;
+        }
+        
+        // Stripe Elements handles card validation
+        if (!state.cardElement || state.cardElement._invalid) {
+            document.getElementById('card-errors').textContent = 'Please enter valid card details';
+            isValid = false;
+        }
+    }
+
+    // Business rule: Cash payment cannot be used with delivery
+    if (state.selectedDelivery === 'delivery' && state.selectedPayment === 'cash') {
+        alert("⚠️ Cash payment is not allowed for delivery orders. Please use card or M-Pesa for delivery.");
+        isValid = false;
+    }
+
+    // Business rule: Cash payment cannot have delivery address
+    if (state.selectedPayment === 'cash' && document.getElementById('delivery-address').value) {
+        alert("⚠️ Cash payment cannot be used with delivery address. Please choose pickup or sit-in option.");
+        isValid = false;
+    }
+
+    return isValid;
+}
+
+// Prevent cash payment when delivery address is selected
+function setupCashAddressValidation() {
+    const deliveryAddress = document.getElementById('delivery-address');
+    const cashPaymentCard = document.querySelector('[data-method="cash"]');
+    
+    deliveryAddress.addEventListener('change', function() {
+        if (this.value && state.selectedPayment === 'cash') {
+            // If address is selected and payment is cash, show warning and switch to pickup
+            alert("⚠️ Cash payment cannot be used with delivery address. Switching to pickup.");
+            
+            // Switch to pickup
+            const pickupCard = document.querySelector('[data-method="pickup"]');
+            deliveryCards.forEach(c => c.classList.remove('active'));
+            pickupCard.classList.add('active');
+            state.selectedDelivery = 'pickup';
+            document.getElementById('delivery-address-container').style.display = 'none';
+            document.getElementById('delivery-address').value = '';
+        }
+    });
+}
+
+        // Checkout Process
+        async function processCheckout() {
+            if (!validateForm()) {
+                return;
+            }
+
+            const total = utils.calculateTotal();
+            let orderData = {
+                items: state.cart.map(item => ({
+                    id: item.item_id,
+                    quantity: item.quantity
+                })),
+                payment_method: state.selectedPayment,
+                delivery_option: state.selectedDelivery,
+                delivery_address: state.selectedDelivery === 'delivery' ? 
+                    document.getElementById('delivery-address').value : null,
+                _token: utils.getCSRFToken()
+            };
+
+            // Add payment-specific data
+            if (state.selectedPayment === 'mpesa') {
+                orderData.phone = utils.formatPhone(document.getElementById('mpesa-phone').value.trim());
+            }
+
+            try {
+                utils.showLoading(elements.checkoutBtn);
+
+                let result;
+                if (state.selectedPayment === 'card') {
+                    // For card payments, we need to handle Stripe payment intent
+                    const intentResponse = await fetch('/campusmunchies.com/payment/card/create-intent', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': utils.getCSRFToken()
+                        },
+                        body: JSON.stringify({ 
+                            amount: total,
+                            currency: 'zar',
+                            _token: utils.getCSRFToken()
+                        })
+                    });
+
+                    if (!intentResponse.ok) {
+                        throw new Error('Failed to create payment intent');
+                    }
+
+                    const intentData = await intentResponse.json();
+
+                    // Confirm payment with Stripe
+                    const { error, paymentIntent } = await state.stripe.confirmCardPayment(intentData.client_secret, {
+                        payment_method: {
+                            card: state.cardElement,
+                            billing_details: {
+                                name: document.getElementById('card-name').value.trim(),
+                                address: {
+                                    postal_code: '00000' 
+                                }
+                            }
+                        }
+                    });
+
+                    if (error) {
+                        throw new Error(`Payment failed: ${error.message}`);
+                    }
+
+                    // Now create the order with confirmed payment
+                    orderData.payment_intent_id = paymentIntent.id;
+                }
+
+                // Create the order
+                const orderResponse = await fetch(`/campusmunchies.com/${state.storeName}/order/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': utils.getCSRFToken()
+                    },
+                    body: JSON.stringify(orderData)
+                });
+
+                if (!orderResponse.ok) {
+                    const errorData = await orderResponse.json();
+                    throw new Error(errorData.error || 'Failed to create order');
+                }
+
+                result = await orderResponse.json();
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Order creation failed');
+                }
+
+                showOrderConfirmation(result, total);
+                
+                // Clear cart for successful orders
+                if (state.selectedPayment === 'cash' || result.status === 'confirmed' || result.status === 'paid') {
+                    await clearCart();
+                }
+
+            } catch (error) {
+                console.error('Checkout error:', error);
+                alert(error.message || 'Network error. Please check your connection and try again.');
+            } finally {
+                utils.hideLoading(elements.checkoutBtn);
+            }
+        }
+
+        // M-Pesa Polling
+        function startMpesaPolling(orderNumber) {
+            elements.mpesaStatus.style.display = 'block';
+            elements.mpesaStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Waiting for M-Pesa confirmation...';
+            
+            state.pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/campusmunchies.com/api/order/${orderNumber}/status`);
+                    if (!response.ok) throw new Error('Status check failed');
+                    
+                    const data = await response.json();
+                    if (data.status && data.status !== 'pending') {
+                        clearInterval(state.pollInterval);
+                        if (data.status === 'paid') {
+                            elements.mpesaStatus.innerHTML = '<i class="fas fa-check-circle" style="color: #28a745;"></i> Payment successful!';
+                            await clearCart();
+                        } else {
+                            elements.mpesaStatus.innerHTML = `<i class="fas fa-exclamation-circle" style="color: #ff6b6b;"></i> Payment ${data.status}. Please try again.`;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 3000);
+        }
+
+        function showOrderConfirmation(orderResult, total) {
+            const deliveryType = state.selectedDelivery === 'delivery' ? 'Delivery' : 
+                                  state.selectedDelivery === 'sit_in' ? 'Sit In' : 'Pickup';
+            
+            elements.modalDetails.innerHTML = `
+                <p><strong>Order #${orderResult.order_number}</strong> placed successfully!</p>
+                <p><strong>Total:</strong> ${utils.formatPrice(total)}</p>
+                <p><strong>Payment:</strong> ${state.selectedPayment.toUpperCase()}</p>
+                <p><strong>Delivery:</strong> ${deliveryType}</p>
+                ${state.selectedDelivery === 'delivery' ? `<p><strong>Address:</strong> ${document.getElementById('delivery-address').value}</p>` : ''}
+            `;
+
+            // Store the order number
+            state.currentOrderNumber = orderResult.order_number;
+
+            // Handle payment instructions
+            if (state.selectedPayment === 'cash') {
+                elements.paymentInstructions.innerHTML = `
+                    <p><i class="fas fa-info-circle"></i> Please have cash ready when you ${state.selectedDelivery === 'delivery' ? 'receive your order' : 'pick up your order'}.</p>
+                `;
+            } else if (state.selectedPayment === 'card') {
+                elements.paymentInstructions.innerHTML = `
+                    <p><i class="fas fa-credit-card"></i> Your card has been charged successfully.</p>
+                `;
+            } else if (state.selectedPayment === 'mpesa') {
+                elements.paymentInstructions.innerHTML = `
+                    <p><i class="fas fa-mobile-alt"></i> Check your phone for M-Pesa payment prompt.</p>
+                `;
+                startMpesaPolling(orderResult.order_number);
+            }
+
+            elements.modal.style.display = 'block';
+        }
+
+        // Cart Clear
+        async function clearCart() {
+            try {
+                await fetch('/campusmunchies.com/api/cart/clear', {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': utils.getCSRFToken()
+                    }
+                });
+            } catch (error) {
+                console.error('Error clearing cart:', error);
+            }
+        }
+
+        // Modal Functions
+        function closeModal() {
+            elements.modal.style.display = 'none';
+            if (state.pollInterval) {
+                clearInterval(state.pollInterval);
+                state.pollInterval = null;
+            }
+            window.location.href = '/campusmunchies.com/';
+        }
+
+        // Input Formatting
+        function setupInputFormatting() {
+            const mpesaPhoneInput = document.getElementById('mpesa-phone');
+            if (mpesaPhoneInput) {
+                mpesaPhoneInput.addEventListener('input', function(e) {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                });
+            }
+        }
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    loadCart();
+    setupDeliveryOptions();
+    setupPaymentOptions();
+    setupInputFormatting();
+    setupCashAddressValidation(); // Add this line
+
+    elements.checkoutBtn.addEventListener('click', processCheckout);
+
+    elements.modal.addEventListener('click', function(e) {
+        if (e.target === elements.modal) {
+            closeModal();
+        }
+    });
+});
+    </script>
+</body>
+</html>

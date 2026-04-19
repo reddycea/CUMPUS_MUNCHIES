@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile - Campus Munchies</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+* {box-sizing:border-box;margin:0;padding:0;font-family:'Poppins',sans-serif}
+body {background:linear-gradient(rgba(0,0,0,0.7),rgba(0,0,0,0.7)),url('https://wallpaperaccess.com/full/5674818.jpg') no-repeat center center/cover;color:#fff;min-height:100vh}
+header {background:linear-gradient(to right,rgba(0,0,0,0.9),rgba(0,0,0,0.7));color:white;display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;height:70px;position:sticky;top:0;z-index:1000;border-bottom:1px solid rgba(255,255,255,0.1)}
+.logo {font-weight:700;font-size:1.6rem;background:linear-gradient(45deg,#ff9a3d,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+nav a {margin-left:2rem;font-weight:500;transition:all 0.3s ease;display:inline-flex;align-items:center;padding:8px 15px;border-radius:5px;color:#fff;text-decoration:none}
+nav a:hover {color:#ff9a3d;background:rgba(255,255,255,0.05);transform:translateY(-2px)}
+.container {max-width:600px;margin:2rem auto;padding:0 2rem}
+.page-header {margin-bottom:2rem}
+.page-header h1 {color:#ff9a3d;margin-bottom:0.5rem}
+.profile-card {background:rgba(255,255,255,0.1);padding:30px;border-radius:12px;backdrop-filter:blur(10px)}
+.profile-header {text-align:center;margin-bottom:30px}
+.profile-avatar {width:100px;height:100px;border-radius:50%;background:linear-gradient(to right,#ff9a3d,#ff6b6b);display:flex;align-items:center;justify-content:center;margin:0 auto 15px;font-size:2.5rem;color:#fff}
+.profile-header h2 {margin-bottom:5px}
+.profile-header p {color:rgba(255,255,255,0.7)}
+.form-group {margin-bottom:20px}
+label {display:block;margin-bottom:8px;font-weight:600}
+input,select {width:100%;padding:12px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.1);color:#fff;font-size:16px}
+input:focus,select:focus {border-color:#ff9a3d;outline:none}
+.checkbox-group {display:flex;align-items:center;gap:10px;margin-bottom:15px}
+.checkbox-group input {width:auto}
+.checkbox-group label {margin:0;font-weight:normal}
+.btn {background:linear-gradient(to right,#ff9a3d,#ff6b6b);color:#fff;border:none;padding:15px 30px;border-radius:8px;cursor:pointer;font-weight:600;font-size:16px;transition:all 0.3s;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover {transform:translateY(-2px);box-shadow:0 5px 15px rgba(255,154,61,0.4)}
+.btn:disabled {opacity:0.6;cursor:not-allowed}
+.btn-small {padding:8px 15px;font-size:14px;width:auto}
+.message {padding:12px;border-radius:5px;text-align:center;margin-bottom:15px;font-weight:500}
+.message.success {background:rgba(40,167,69,0.9);color:white}
+.message.error {background:rgba(220,53,69,0.9);color:white}
+.loading {display:none;text-align:center;padding:20px;color:rgba(255,255,255,0.7)}
+
+@media (max-width:768px) {
+    .container {padding:10px}
+    nav a {margin-left:1rem;padding:6px 10px;font-size:0.9rem}
+    header {padding:1rem}
+}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">Campus Munchies</div>
+<nav>
+<a href="/campusmunchies.com/"><i class="fas fa-home"></i> Home</a>
+<a href="/campusmunchies.com/orders"><i class="fas fa-receipt"></i> My Orders</a>
+<a href="/campusmunchies.com/notifications"><i class="fas fa-bell"></i> Notifications</a>
+<a href="/campusmunchies.com/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</nav>
+</header>
+
+<div class="container">
+<div class="page-header">
+<h1><i class="fas fa-user"></i> My Profile</h1>
+<p>Manage your account information and preferences</p>
+</div>
+
+<div id="message-container"></div>
+<div class="loading" id="loading">Updating profile...</div>
+
+<div class="profile-card">
+<div class="profile-header">
+<div class="profile-avatar">
+<i class="fas fa-user"></i>
+</div>
+<h2>{{ profile.username }}</h2>
+<p>{{ profile.email }}</p>
+</div>
+
+<form id="profile-form">
+<!-- CSRF Token for form submission -->
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="form-group">
+<label><i class="fas fa-user"></i> Username</label>
+<input type="text" name="username" value="{{ profile.username }}" required maxlength="50">
+</div>
+<div class="form-group">
+<label><i class="fas fa-envelope"></i> Email</label>
+<input type="email" name="email" value="{{ profile.email }}" required maxlength="100">
+</div>
+<div class="form-group">
+<label><i class="fas fa-phone"></i> Phone Number</label>
+<input type="tel" name="phone" value="{{ profile.phone or '' }}" placeholder="e.g., 0712345678" maxlength="15">
+<small style="color:rgba(255,255,255,0.7);font-size:12px">South African format: 0712345678</small>
+</div>
+<div class="form-group">
+<label><i class="fas fa-lock"></i> New Password (leave blank to keep current)</label>
+<input type="password" name="password" placeholder="Enter new password" minlength="6" maxlength="100">
+</div>
+<div class="form-group">
+<label><i class="fas fa-lock"></i> Confirm New Password</label>
+<input type="password" name="confirm_password" placeholder="Confirm new password" minlength="6" maxlength="100">
+</div>
+<div class="checkbox-group">
+<input type="checkbox" name="receive_sms" id="receive_sms" {{ 'checked' if profile.receive_sms }}>
+<label for="receive_sms">Receive SMS notifications</label>
+</div>
+<div class="checkbox-group">
+<input type="checkbox" name="receive_emails" id="receive_emails" {{ 'checked' if profile.receive_emails }}>
+<label for="receive_emails">Receive email notifications</label>
+</div>
+<button type="submit" class="btn" id="submit-btn"><i class="fas fa-save"></i> Update Profile</button>
+</form>
+</div>
+</div>
+
+<script>
+// Get CSRF token from the hidden input field
+function getCSRFToken() {
+    return document.querySelector('input[name="csrf_token"]').value;
+}
+
+function showMessage(message, type) {
+    const container = document.getElementById('message-container');
+    container.innerHTML = `<div class="message ${type}">${message}</div>`;
+    setTimeout(() => {
+        container.innerHTML = '';
+    }, 5000);
+}
+
+function showLoading(show) {
+    document.getElementById('loading').style.display = show ? 'block' : 'none';
+    document.getElementById('submit-btn').disabled = show;
+}
+
+document.getElementById('profile-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        username: formData.get('username').trim(),
+        email: formData.get('email').trim(),
+        phone: formData.get('phone').trim(),
+        password: formData.get('password'),
+        confirm_password: formData.get('confirm_password'),
+        receive_sms: formData.get('receive_sms') === 'on',
+        receive_emails: formData.get('receive_emails') === 'on'
+    };
+
+    // Validate passwords match
+    if (data.password && data.password !== data.confirm_password) {
+        showMessage('Passwords do not match', 'error');
+        return;
+    }
+
+    // Validate password length if provided
+    if (data.password && data.password.length < 6) {
+        showMessage('Password must be at least 6 characters', 'error');
+        return;
+    }
+
+    showLoading(true);
+
+    try {
+        const response = await fetch('/campusmunchies.com/profile/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showMessage(result.message || 'Profile updated successfully!', 'success');
+            // Reload page to reflect changes
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showMessage(result.error || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('An error occurred while updating your profile', 'error');
+    } finally {
+        showLoading(false);
+    }
+});
+
+// Phone number validation
+document.querySelector('input[name="phone"]').addEventListener('blur', function(e) {
+    const phone = e.target.value.trim();
+    if (phone && !/^0[6-8][0-9]{8}$/.test(phone)) {
+        showMessage('Please enter a valid South African phone number (e.g., 0712345678)', 'error');
+    }
+});
+</script>
+</body>
+</html>

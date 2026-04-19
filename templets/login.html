@@ -1,1 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campus Munchies - Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+* {box-sizing:border-box;margin:0;padding:0;font-family:'Poppins',sans-serif}
+body {background:linear-gradient(rgba(0,0,0,0.7),rgba(0,0,0,0.7)),url('https://wallpaperaccess.com/full/5674818.jpg') no-repeat center center/cover;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-container {background:rgba(255,255,255,0.1);padding:40px;border-radius:12px;-webkit-backdrop-filter: blur(10px);backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(0,0,0,0.1);width:100%;max-width:400px;border:1px solid rgba(255,255,255,0.2)}
+.logo {text-align:center;margin-bottom:30px}
+.logo h1 {font-weight:700;font-size:2rem;background:linear-gradient(45deg,#ff9a3d,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo p {color:rgba(255,255,255,0.7);margin-top:5px}
+.form-group {margin-bottom:20px}
+label {display:block;margin-bottom:8px;font-weight:600}
+input {width:100%;padding:12px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.1);color:#fff;font-size:16px;transition:all 0.3s}
+input:focus {border-color:#ff9a3d;outline:none;background:rgba(255,255,255,0.15)}
+.btn {background:linear-gradient(to right,#ff9a3d,#ff6b6b);color:#fff;border:none;padding:15px;border-radius:8px;cursor:pointer;font-weight:600;font-size:16px;transition:all 0.3s;width:100%}
+.btn:hover {transform:translateY(-2px);box-shadow:0 5px 15px rgba(255,154,61,0.4)}
+.btn:disabled {opacity:0.6;cursor:not-allowed}
+.links {text-align:center;margin-top:20px}
+.links a {color:#ff9a3d;text-decoration:none;margin:0 10px;cursor:pointer}
+.links a:hover {text-decoration:underline}
+.hidden {display:none}
+#message-container {margin-bottom:20px}
+.message {padding:10px;border-radius:5px;text-align:center;font-weight:500}
+.message.success {background:rgba(40,167,69,0.9)}
+.message.error {background:rgba(220,53,69,0.9)}
+.loading {display:none;text-align:center;margin:10px 0}
+</style>
+</head>
+<body>
+<div class="login-container">
+<div class="logo">
+<h1>Campus Munchies</h1>
+<p>Login to your account</p>
+</div>
 
+<div id="message-container"></div>
+<div class="loading" id="loading">Processing...</div>
+
+<form id="login-form">
+<input type="hidden" name="csrf_token" id="csrf_token" value="{{ csrf_token() }}">
+<div class="form-group">
+<label>Username or Email</label>
+<input type="text" name="username" required autocomplete="username" maxlength="100">
+</div>
+<div class="form-group">
+<label>Password</label>
+<input type="password" name="password" required autocomplete="current-password" maxlength="100">
+</div>
+<button type="submit" class="btn" id="login-btn">Login</button>
+</form>
+
+<div class="links">
+<a onclick="showResetForm()">Forgot Password?</a>
+<a onclick="showRegisterForm()">Create Account</a>
+</div>
+
+<form id="reset-form" class="hidden">
+<input type="hidden" name="csrf_token" id="reset_csrf_token" value="{{ csrf_token() }}">
+<div class="form-group">
+<label>Email or Username</label>
+<input type="text" name="username_or_email" required maxlength="100">
+</div>
+<button type="submit" class="btn">Reset Password</button>
+<div class="links" style="margin-top:15px">
+<a onclick="showLoginForm()">Back to Login</a>
+</div>
+</form>
+
+<form id="register-form" class="hidden">
+<input type="hidden" name="csrf_token" id="register_csrf_token" value="{{ csrf_token() }}">
+<div class="form-group">
+<label>Username</label>
+<input type="text" name="username" required maxlength="50" pattern="[a-zA-Z0-9_]+" title="Username can only contain letters, numbers, and underscores">
+</div>
+<div class="form-group">
+<label>Email</label>
+<input type="email" name="email" required maxlength="100">
+</div>
+<div class="form-group">
+<label>Phone</label>
+<input type="tel" name="phone" required placeholder="e.g., 0712345678" pattern="0[6-8][0-9]{8}" title="Please enter a valid South African phone number">
+</div>
+<div class="form-group">
+<label>Password</label>
+<input type="password" name="password" required minlength="6" maxlength="100">
+</div>
+<div class="form-group">
+<label>Confirm Password</label>
+<input type="password" name="confirm_password" required minlength="6" maxlength="100">
+</div>
+<div class="form-group" style="display:flex;align-items:center;gap:10px">
+<input type="checkbox" name="opt_in" id="opt_in" style="width:auto">
+<label for="opt_in" style="display:inline;font-weight:normal">Receive promotional emails</label>
+</div>
+<div class="form-group" style="display:flex;align-items:center;gap:10px">
+<input type="checkbox" name="receive_sms" id="receive_sms" style="width:auto">
+<label for="receive_sms" style="display:inline;font-weight:normal">Receive SMS notifications</label>
+</div>
+<button type="submit" class="btn">Create Account</button>
+<div class="links" style="margin-top:15px">
+<a onclick="showLoginForm()">Back to Login</a>
+</div>
+</form>
+</div>
+
+<script>
+// Get CSRF token function
+function getCSRFToken() {
+    return document.getElementById('csrf_token')?.value || 
+           document.getElementById('reset_csrf_token')?.value || 
+           document.getElementById('register_csrf_token')?.value;
+}
+
+function showMessage(message, type) {
+    const container = document.getElementById('message-container');
+    if (!container) return;
+    
+    container.innerHTML = `<div class="message ${type}">${message}</div>`;
+    setTimeout(() => {
+        container.innerHTML = '';
+    }, 5000);
+}
+
+function showLoading(show) {
+    const loading = document.getElementById('loading');
+    if (loading) {
+        loading.style.display = show ? 'block' : 'none';
+    }
+}
+
+function showLoginForm() {
+    document.getElementById('login-form').classList.remove('hidden');
+    document.getElementById('reset-form').classList.add('hidden');
+    document.getElementById('register-form').classList.add('hidden');
+}
+
+function showResetForm() {
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('reset-form').classList.remove('hidden');
+    document.getElementById('register-form').classList.add('hidden');
+}
+
+function showRegisterForm() {
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('reset-form').classList.add('hidden');
+    document.getElementById('register-form').classList.remove('hidden');
+}
+
+function escapeHtml(unsafe) {
+    if (unsafe === null || unsafe === undefined) return '';
+    return unsafe
+        .toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+// Handle login form
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    showLoading(true);
+
+    const formData = new FormData(this);
+    const csrfToken = getCSRFToken();
+    
+    const data = {
+        username: escapeHtml(formData.get('username')?.trim() || ''),
+        password: formData.get('password') || '',
+        csrf_token: csrfToken
+    };
+
+    if (!data.username || !data.password) {
+        showMessage('Username/email and password required', 'error');
+        btn.disabled = false;
+        showLoading(false);
+        return;
+    }
+
+    try {
+        const response = await fetch('/campusmunchies.com/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showMessage('Login successful! Redirecting...', 'success');
+            sessionStorage.setItem('showWelcome', 'true');
+    
+            setTimeout(() => {
+                if (result.redirect_url) {
+                    window.location.href = result.redirect_url;
+                } else {
+                    // Fallback redirect based on user role
+                    if (result.role === 'admin') {
+                        // The backend should provide the store_name in the response
+                        window.location.href = `/campusmunchies.com/admin/${result.store_name.toLowerCase()}/`;
+                    } else if (result.role === 'superadmin') {
+                        window.location.href = '/campusmunchies.com/superadmin/';
+                    } else {
+                        window.location.href = '/campusmunchies.com/';
+                    }
+                }
+            }, 1000);
+        } else {
+            showMessage(result.error || 'Invalid credentials', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('An error occurred during login. Please try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        showLoading(false);
+    }
+});
+// Handle reset password form
+document.getElementById('reset-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const csrfToken = getCSRFToken();
+    
+    const data = {
+        username_or_email: escapeHtml(formData.get('username_or_email')?.trim() || ''),
+        csrf_token: csrfToken
+    };
+
+    if (!data.username_or_email) {
+        showMessage('Username or email required', 'error');
+        return;
+    }
+
+    showLoading(true);
+
+    try {
+        const response = await fetch('/campusmunchies.com/password/reset/request', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showMessage(result.message || 'Reset instructions sent', 'success');
+            setTimeout(() => showLoginForm(), 2000);
+        } else {
+            showMessage(result.error || 'Failed to send reset instructions', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('An error occurred', 'error');
+    } finally {
+        showLoading(false);
+    }
+});
+
+// Handle register form
+document.getElementById('register-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const csrfToken = getCSRFToken();
+    
+    const data = {
+        username: escapeHtml(formData.get('username')?.trim() || ''),
+        email: escapeHtml(formData.get('email')?.trim() || ''),
+        phone: escapeHtml(formData.get('phone')?.trim() || ''),
+        password: formData.get('password') || '',
+        confirm_password: formData.get('confirm_password') || '',
+        opt_in: formData.get('opt_in') === 'on',
+        receive_sms: formData.get('receive_sms') === 'on',
+        receive_emails: formData.get('receive_emails') === 'on',
+        csrf_token: csrfToken
+    };
+
+    if (!data.username || !data.email || !data.password || !data.confirm_password || !data.phone) {
+        showMessage('All required fields must be filled', 'error');
+        return;
+    }
+
+    if (data.password !== data.confirm_password) {
+        showMessage('Passwords do not match', 'error');
+        return;
+    }
+
+    if (data.password.length < 6) {
+        showMessage('Password must be at least 6 characters', 'error');
+        return;
+    }
+
+    // Validate phone format
+    const phoneRegex = /^0[6-8][0-9]{8}$/;
+    if (!phoneRegex.test(data.phone)) {
+        showMessage('Please enter a valid South African phone number (e.g., 0712345678)', 'error');
+        return;
+    }
+
+    showLoading(true);
+
+    try {
+        const response = await fetch('/campusmunchies.com/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showMessage(result.message || 'Registration successful!', 'success');
+            showLoginForm();
+        } else {
+            showMessage(result.error || 'Registration failed', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('An error occurred during registration', 'error');
+    } finally {
+        showLoading(false);
+    }
+});
+
+// Input validation
+document.querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', function() {
+        this.setCustomValidity('');
+    });
+});
+
+// Phone input formatting
+document.querySelector('input[name="phone"]')?.addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 10) value = value.substring(0, 10);
+    e.target.value = value;
+});
+</script>
+</body>
+</html>

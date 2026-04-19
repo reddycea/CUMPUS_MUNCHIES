@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders - Campus Munchies</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://wallpaperaccess.com/full/5674818.jpg') no-repeat center center/cover;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            height: 70px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 1.6rem;
+            background: linear-gradient(45deg, #ff9a3d, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        nav a {
+            margin-left: 2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 15px;
+            border-radius: 5px;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        nav a:hover {
+            color: #ff9a3d;
+            background: rgba(255,255,255,0.05);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .page-header h1 {
+            color: #ff9a3d;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .filter-tab:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(to right, #ff9a3d, #ff6b6b);
+            border-color: #ff9a3d;
+        }
+
+        .orders-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .order-card {
+            background: rgba(255,255,255,0.1);
+            padding: 25px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .order-card:hover {
+            border-color: rgba(255,154,61,0.3);
+            transform: translateY(-2px);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .order-info h3 {
+            color: #ff9a3d;
+            margin-bottom: 5px;
+        }
+
+        .order-meta {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-confirmed { background: #d1ecf1; color: #0c5460; }
+        .status-preparing { background: #d4edda; color: #155724; }
+        .status-ready { background: #cce5ff; color: #004085; }
+        .status-completed { background: #d1e7dd; color: #0f5132; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+
+        .order-details {
+            margin-top: 15px;
+        }
+
+        .order-items {
+            margin-bottom: 15px;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-name {
+            flex-grow: 1;
+        }
+
+        .item-quantity {
+            margin: 0 15px;
+            color: rgba(255,255,255,0.7);
+        }
+
+        .item-price {
+            font-weight: 600;
+        }
+
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .order-total {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #ff9a3d;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, #ff9a3d, #ff6b6b);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,154,61,0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .no-orders {
+            text-align: center;
+            padding: 50px 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .no-orders i {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #ff9a3d;
+        }
+
+        .no-orders h2 {
+            margin-bottom: 10px;
+        }
+
+        .no-orders p {
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+        }
+
+        .loading i {
+            color: #ff9a3d;
+            margin-right: 10px;
+        }
+
+        .error-message {
+            background: rgba(220,53,69,0.2);
+            border: 1px solid rgba(220,53,69,0.5);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .success-message {
+            background: rgba(40,167,69,0.2);
+            border: 1px solid rgba(40,167,69,0.5);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .modal-header h3 {
+            color: #ff9a3d;
+            margin: 0;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .cancellation-options {
+            margin: 20px 0;
+        }
+
+        .cancellation-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cancellation-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .cancellation-option.selected {
+            border-color: #ff9a3d;
+            background-color: #fff3e0;
+        }
+
+        .cancellation-option input {
+            margin-right: 10px;
+        }
+
+        .cancellation-option .option-details {
+            flex-grow: 1;
+        }
+
+        .cancellation-option .option-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .cancellation-option .option-description {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                height: auto;
+                padding: 1rem;
+            }
+
+            nav {
+                margin-top: 15px;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            nav a {
+                margin-left: 0;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .order-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .status-badge {
+                align-self: flex-start;
+                margin-top: 10px;
+            }
+
+            .order-footer {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .order-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Campus Munchies</div>
+        <nav>
+            <a href="/campusmunchies.com"><i class="fas fa-home"></i> Home</a>
+            <a href="/campusmunchies.com/notifications"><i class="fas fa-bell"></i> Notifications</a>
+            <a href="/campusmunchies.com/profile"><i class="fas fa-user"></i> Profile</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-receipt"></i> My Orders</h1>
+            <div class="filter-tabs">
+                <div class="filter-tab active" data-filter="all">All Orders</div>
+                <div class="filter-tab" data-filter="pending">Pending</div>
+                <div class="filter-tab" data-filter="confirmed">Confirmed</div>
+                <div class="filter-tab" data-filter="ready">Ready</div>
+                <div class="filter-tab" data-filter="completed">Completed</div>
+                <div class="filter-tab" data-filter="cancelled">Cancelled</div>
+            </div>
+        </div>
+
+        <div id="message-container"></div>
+
+        <div id="orders-container">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading your orders...
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Order Modal -->
+    <div id="cancelModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cancel Order</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <p>Are you sure you want to cancel this order? Please select a cancellation option and provide a reason.</p>
+            
+            <div class="cancellation-options">
+                <div class="cancellation-option" data-action="refund">
+                    <input type="radio" name="cancellationAction" id="actionRefund" value="refund">
+                    <div class="option-details">
+                        <div class="option-title">Refund</div>
+                        <div class="option-description">Get a full refund to your original payment method. Refund will be processed within 3-5 business days.</div>
+                    </div>
+                </div>
+                
+                <div class="cancellation-option" data-action="donate">
+                    <input type="radio" name="cancellationAction" id="actionDonate" value="donate">
+                    <div class="option-details">
+                        <div class="option-title">Donate to Store</div>
+                        <div class="option-description">Donate the order amount to the store to support their business.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="cancelReason">Reason for cancellation:</label>
+                <textarea id="cancelReason" placeholder="Please provide a reason for cancellation..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancelCancelBtn">Go Back</button>
+                <button class="btn btn-danger" id="confirmCancelBtn">Cancel Order</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ordersContainer = document.getElementById('orders-container');
+            const messageContainer = document.getElementById('message-container');
+            const filterTabs = document.querySelectorAll('.filter-tab');
+            const cancelModal = document.getElementById('cancelModal');
+            const cancelReason = document.getElementById('cancelReason');
+            const cancelCancelBtn = document.getElementById('cancelCancelBtn');
+            const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+            const closeModalBtn = document.querySelector('.close-modal');
+            const cancellationOptions = document.querySelectorAll('.cancellation-option');
+            const cancellationRadios = document.querySelectorAll('input[name="cancellationAction"]');
+            
+            let allOrders = [];
+            let currentOrderId = null;
+            let selectedCancellationAction = 'refund'; // Default action
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            // Fetch orders from API
+            fetchOrders();
+
+            // Set up filter tabs
+            filterTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    filterTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    filterOrders(this.dataset.filter);
+                });
+            });
+
+            // Modal event listeners
+            closeModalBtn.addEventListener('click', closeModal);
+            cancelCancelBtn.addEventListener('click', closeModal);
+            confirmCancelBtn.addEventListener('click', confirmCancelOrder);
+
+            // Close modal when clicking outside
+            cancelModal.addEventListener('click', function(e) {
+                if (e.target === cancelModal) {
+                    closeModal();
+                }
+            });
+
+            // Set up cancellation option selection
+            cancellationOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    const radio = this.querySelector('input[type="radio"]');
+                    radio.checked = true;
+                    selectedCancellationAction = radio.value;
+                    
+                    // Update UI
+                    cancellationOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+
+            // Set default selection
+            if (cancellationRadios.length > 0) {
+                cancellationRadios[0].checked = true;
+                cancellationOptions[0].classList.add('selected');
+            }
+
+            async function fetchOrders() {
+                try {
+                    showLoading();
+                    const response = await fetch('/campusmunchies.com/api/orders', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    // Handle the response based on its structure
+                    if (Array.isArray(data)) {
+                        allOrders = data;
+                    } else if (data.success && Array.isArray(data.orders)) {
+                        allOrders = data.orders;
+                    } else {
+                        throw new Error('Invalid response format from server');
+                    }
+                    
+                    displayOrders(allOrders);
+                } catch (error) {
+                    console.error('Error fetching orders:', error);
+                    showError('Failed to load orders. Please try again.');
+                }
+            }
+
+            function displayOrders(orders) {
+                if (orders.length === 0) {
+                    ordersContainer.innerHTML = `
+                        <div class="no-orders">
+                            <i class="fas fa-receipt"></i>
+                            <h2>No Orders Yet</h2>
+                            <p>You haven't placed any orders yet. Start exploring our menu!</p>
+                            <a href="/campusmunchies.com/menu" class="btn btn-primary">Browse Menu</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Sort orders by date (newest first)
+                orders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                const ordersHTML = orders.map(order => {
+                    const orderDate = new Date(order.created_at);
+                    const formattedDate = orderDate.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    // Get status badge class
+                    const statusClass = `status-${order.status.toLowerCase()}`;
+                    
+                    // Calculate total if not provided
+                    const total = order.amount || (order.items ? 
+                        order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) : 0);
+
+                    // Generate items HTML (show first 3 items only)
+                    let itemsHTML = '';
+                    const displayItems = order.items ? order.items.slice(0, 3) : [];
+                    
+                    if (displayItems.length > 0) {
+                        itemsHTML = displayItems.map(item => `
+                            <div class="order-item">
+                                <div class="item-name">${item.name || 'Item'}</div>
+                                <div class="item-quantity">x${item.quantity}</div>
+                                <div class="item-price">R${(item.price * item.quantity).toFixed(2)}</div>
+                            </div>
+                        `).join('');
+                        
+                        // Show "more items" indicator if there are more than 3 items
+                        if (order.items.length > 3) {
+                            itemsHTML += `
+                                <div class="order-item">
+                                    <div class="item-name" style="color: rgba(255,255,255,0.7);">
+                                        + ${order.items.length - 3} more items
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        itemsHTML = '<div class="order-item"><div class="item-name">No item details available</div></div>';
+                    }
+
+                    // Determine which action buttons to show based on order status
+                    let actionButtons = '';
+                    
+                    if (order.status === 'pending' || order.status === 'confirmed') {
+                        actionButtons = `
+                            <button class="btn btn-danger" onclick="openCancelModal(${order.id})">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        `;
+                    }
+                    
+                    if (order.status === 'ready') {
+                        actionButtons = `
+                            <button class="btn btn-success" onclick="markOrderReceived(${order.id})">
+                                <i class="fas fa-check"></i> Mark Received
+                            </button>
+                        `;
+                    }
+                    
+                    if (order.status === 'completed' || order.status === 'delivered') {
+                        actionButtons = `
+                            <button class="btn btn-primary" onclick="reorderItems(${order.id})">
+                                <i class="fas fa-redo"></i> Reorder
+                            </button>
+                        `;
+                    }
+
+                    // Always show view details button
+                    actionButtons += `
+                        <a href="/campusmunchies.com/orders/${order.id}" class="btn btn-secondary">
+                            <i class="fas fa-eye"></i> View Details
+                        </a>
+                    `;
+
+                    return `
+                        <div class="order-card" data-status="${order.status.toLowerCase()}">
+                            <div class="order-header">
+                                <div class="order-info">
+                                    <h3>Order #${order.order_number || order.id}</h3>
+                                    <div class="order-meta">
+                                        ${order.store_name || 'Store'} • ${formattedDate} • ${order.order_type || 'pickup'}
+                                    </div>
+                                </div>
+                                <div class="status-badge ${statusClass}">
+                                    ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                </div>
+                            </div>
+                            <div class="order-details">
+                                <div class="order-items">
+                                    ${itemsHTML}
+                                </div>
+                                <div class="order-footer">
+                                    <div class="order-total">R${total.toFixed(2)}</div>
+                                    <div class="order-actions">
+                                        ${actionButtons}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                ordersContainer.innerHTML = ordersHTML;
+            }
+
+            function filterOrders(status) {
+                if (status === 'all') {
+                    displayOrders(allOrders);
+                } else {
+                    const filteredOrders = allOrders.filter(order => 
+                        order.status.toLowerCase() === status
+                    );
+                    displayOrders(filteredOrders);
+                }
+            }
+
+            function openCancelModal(orderId) {
+                currentOrderId = orderId;
+                cancelReason.value = '';
+                // Reset to default selection
+                if (cancellationRadios.length > 0) {
+                    cancellationRadios[0].checked = true;
+                    selectedCancellationAction = 'refund';
+                    cancellationOptions.forEach(opt => opt.classList.remove('selected'));
+                    cancellationOptions[0].classList.add('selected');
+                }
+                cancelModal.style.display = 'flex';
+            }
+
+            function closeModal() {
+                cancelModal.style.display = 'none';
+                currentOrderId = null;
+            }
+
+            async function confirmCancelOrder() {
+                if (!currentOrderId) return;
+                
+                const reason = cancelReason.value.trim();
+                if (!reason) {
+                    showError('Please provide a reason for cancellation.');
+                    return;
+                }
+
+                try {
+                    confirmCancelBtn.disabled = true;
+                    confirmCancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+
+                    const response = await fetch(`/campusmunchies.com/orders/${currentOrderId}/cancel`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({ 
+                            reason: reason,
+                            action: selectedCancellationAction
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        showSuccess(data.message || 'Order cancelled successfully.');
+                        closeModal();
+                        fetchOrders(); // Refresh orders
+                    } else {
+                        throw new Error(data.error || 'Failed to cancel order');
+                    }
+                } catch (error) {
+                    console.error('Error cancelling order:', error);
+                    showError(error.message || 'Failed to cancel order. Please try again.');
+                } finally {
+                    confirmCancelBtn.disabled = false;
+                    confirmCancelBtn.innerHTML = 'Cancel Order';
+                }
+            }
+
+            async function markOrderReceived(orderId) {
+                if (!confirm('Mark this order as received?')) return;
+
+                try {
+                    const response = await fetch(`/campusmunchies.com/orders/${orderId}/received`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        showSuccess(data.message || 'Order marked as received.');
+                        fetchOrders(); // Refresh orders
+                    } else {
+                        throw new Error(data.error || 'Failed to update order status');
+                    }
+                } catch (error) {
+                    console.error('Error marking order received:', error);
+                    showError(error.message || 'Failed to update order. Please try again.');
+                }
+            }
+
+            async function reorderItems(orderId) {
+                try {
+                    const response = await fetch(`/campusmunchies.com/orders/${orderId}/reorder`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        showSuccess(data.message || 'Items added to cart successfully!');
+                        setTimeout(() => {
+                            window.location.href = '/campusmunchies.com/cart';
+                        }, 1500);
+                    } else {
+                        throw new Error(data.error || 'Failed to reorder items');
+                    }
+                } catch (error) {
+                    console.error('Error reordering items:', error);
+                    showError(error.message || 'Failed to reorder items. Please try again.');
+                }
+            }
+
+            function showLoading() {
+                ordersContainer.innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading your orders...
+                    </div>
+                `;
+            }
+
+            function showError(message) {
+                messageContainer.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Error:</strong> ${message}
+                    </div>
+                `;
+                setTimeout(() => {
+                    messageContainer.innerHTML = '';
+                }, 5000);
+            }
+
+            function showSuccess(message) {
+                messageContainer.innerHTML = `
+                    <div class="success-message">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Success:</strong> ${message}
+                    </div>
+                `;
+                setTimeout(() => {
+                    messageContainer.innerHTML = '';
+                }, 5000);
+            }
+
+            // Make functions available globally for onclick handlers
+            window.openCancelModal = openCancelModal;
+            window.markOrderReceived = markOrderReceived;
+            window.reorderItems = reorderItems;
+            window.fetchOrders = fetchOrders;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feedback - {{ store.name }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+* {box-sizing:border-box;margin:0;padding:0;font-family:'Poppins',sans-serif}
+body {background:linear-gradient(rgba(0,0,0,0.7),rgba(0,0,0,0.7)),url('https://wallpaperaccess.com/full/5674818.jpg') no-repeat center center/cover;color:#fff;min-height:100vh;padding:20px}
+.container {max-width:600px;margin:0 auto}
+header {display:flex;justify-content:space-between;align-items:center;margin-bottom:30px}
+.logo {font-weight:700;font-size:1.6rem;background:linear-gradient(45deg,#ff9a3d,#ff6b6b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.back-btn {background:rgba(255,255,255,0.1);color:#fff;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;transition:all 0.3s;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.back-btn:hover {background:rgba(255,255,255,0.2)}
+.feedback-form {background:rgba(255,255,255,0.1);padding:30px;border-radius:12px;-webkit-backdrop-filter: blur(10px);backdrop-filter:blur(10px)}
+h2 {margin-bottom:20px;color:#ff9a3d;text-align:center}
+.form-group {margin-bottom:20px}
+label {display:block;margin-bottom:8px;font-weight:600}
+.rating {display:flex;gap:10px;margin-bottom:10px;justify-content:center;flex-direction:row-reverse}
+.rating input {display:none}
+.rating label {font-size:2rem;color:#ccc;cursor:pointer;transition:color 0.3s;margin:0}
+.rating input:checked ~ label,
+.rating label:hover,
+.rating label:hover ~ label {color:#ff9a3d}
+textarea {width:100%;padding:12px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:rgba(255,255,255,0.1);color:#fff;font-size:16px;min-height:120px;resize:vertical;font-family:inherit}
+textarea:focus {border-color:#ff9a3d;outline:none}
+.btn {background:linear-gradient(to right,#ff9a3d,#ff6b6b);color:#fff;border:none;padding:15px 30px;border-radius:8px;cursor:pointer;font-weight:600;font-size:16px;transition:all 0.3s;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover {transform:translateY(-2px);box-shadow:0 5px 15px rgba(255,154,61,0.4)}
+.btn:disabled {opacity:0.6;cursor:not-allowed}
+.thank-you {text-align:center;padding:40px 20px}
+.thank-you h3 {color:#ff9a3d;margin-bottom:15px}
+.hidden {display:none}
+#message-container {margin-bottom:20px}
+.message {padding:10px;border-radius:5px;text-align:center;margin-bottom:15px;font-weight:500}
+.message.success {background:rgba(40,167,69,0.9);color:white}
+.message.error {background:rgba(220,53,69,0.9);color:white}
+.loading {display:none;text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<div class="logo">Campus Munchies</div>
+<button class="back-btn" onclick="goBack()">← Back to Menu</button>
+</header>
+
+<div id="message-container"></div>
+<div class="loading" id="loading">Submitting feedback...</div>
+
+<div id="feedback-form" class="feedback-form">
+<h2>Rate Your Experience at {{ store.name }}</h2>
+<form id="submit-feedback">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-group">
+        <label>How would you rate your experience?</label>
+        <div class="rating">
+            <input type="radio" id="star5" name="rating" value="5" required>
+            <label for="star5" title="Excellent">★</label>
+            <input type="radio" id="star4" name="rating" value="4">
+            <label for="star4" title="Very Good">★</label>
+            <input type="radio" id="star3" name="rating" value="3">
+            <label for="star3" title="Good">★</label>
+            <input type="radio" id="star2" name="rating" value="2">
+            <label for="star2" title="Fair">★</label>
+            <input type="radio" id="star1" name="rating" value="1">
+            <label for="star1" title="Poor">★</label>
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Comments (optional)</label>
+        <textarea name="comment" placeholder="Tell us about your experience..." maxlength="1000"></textarea>
+    </div>
+    <button type="submit" class="btn" id="submit-btn">
+        <i class="fas fa-paper-plane"></i> Submit Feedback
+    </button>
+</form>
+</div>
+
+<div id="thank-you" class="thank-you hidden">
+<h3>Thank You for Your Feedback!</h3>
+<p>Your feedback helps us improve our service.</p>
+<button class="btn" onclick="goToHome()">
+    <i class="fas fa-home"></i> Back to Home
+</button>
+</div>
+</div>
+
+<script>
+const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+
+function showMessage(message, type) {
+    const container = document.getElementById('message-container');
+    if (!container) return;
+    
+    container.innerHTML = `<div class="message ${type}">${message}</div>`;
+    setTimeout(() => {
+        container.innerHTML = '';
+    }, 5000);
+}
+
+function showLoading(show) {
+    const loading = document.getElementById('loading');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    if (loading) loading.style.display = show ? 'block' : 'none';
+    if (submitBtn) {
+        submitBtn.disabled = show;
+        submitBtn.innerHTML = show ? 
+            '<i class="fas fa-spinner fa-spin"></i> Submitting...' : 
+            '<i class="fas fa-paper-plane"></i> Submit Feedback';
+    }
+}
+
+function goBack() {
+    if (history.length > 1) {
+        history.back();
+    } else {
+        window.location.href = '/campusmunchies.com/';
+    }
+}
+
+function goToHome() {
+    window.location.href = '/campusmunchies.com/';
+}
+
+function escapeHtml(unsafe) {
+    if (unsafe === null || unsafe === undefined) return '';
+    return unsafe
+        .toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+document.getElementById('submit-feedback').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const rating = formData.get('rating');
+    const comment = formData.get('comment')?.trim() || '';
+
+    if (!rating) {
+        showMessage('Please select a rating', 'error');
+        return;
+    }
+
+    if (comment.length > 1000) {
+        showMessage('Comment must be less than 1000 characters', 'error');
+        return;
+    }
+
+    showLoading(true);
+
+    const data = {
+        rating: rating,
+        comment: comment
+    };
+
+    try {
+        const storeName = '{{ store.name | tojson }}'.replace(/"/g, '');
+        const response = await fetch(`/campusmunchies.com/${encodeURIComponent(storeName)}/feedback/submit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken || ''
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            document.getElementById('feedback-form').classList.add('hidden');
+            document.getElementById('thank-you').classList.remove('hidden');
+        } else {
+            showMessage(result.error || 'Failed to submit feedback', 'error');
+        }
+    } catch (error) {
+        console.error('Error submitting feedback:', error);
+        showMessage('An error occurred while submitting feedback. Please try again.', 'error');
+    } finally {
+        showLoading(false);
+    }
+});
+
+// Improve rating star interaction
+document.querySelectorAll('.rating input').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const labels = document.querySelectorAll('.rating label');
+        labels.forEach(label => {
+            const input = label.previousElementSibling;
+            if (input && input.checked) {
+                label.style.color = '#ff9a3d';
+            }
+        });
+    });
+});
+
+// Initialize rating stars
+document.querySelectorAll('.rating label').forEach(label => {
+    label.addEventListener('mouseenter', function() {
+        const input = this.previousElementSibling;
+        if (input && !input.checked) {
+            this.style.color = '#ff9a3d';
+        }
+    });
+    
+    label.addEventListener('mouseleave', function() {
+        const input = this.previousElementSibling;
+        if (input && !input.checked) {
+            this.style.color = '#ccc';
+        }
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - Campus Munchies</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://wallpaperaccess.com/full/5674818.jpg') no-repeat center center/cover;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            height: 70px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 1.6rem;
+            background: linear-gradient(45deg, #ff9a3d, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        nav a {
+            margin-left: 2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 15px;
+            border-radius: 5px;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        nav a:hover {
+            color: #ff9a3d;
+            background: rgba(255,255,255,0.05);
+            transform: translateY(-2px);
+        }
+
+        nav a.active {
+            color: #ff9a3d;
+            background: rgba(255,154,61,0.1);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .page-header h1 {
+            color: #ff9a3d;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(to right, #ff9a3d, #ff6b6b);
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(255,154,61,0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .notifications-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .notification-card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            position: relative;
+        }
+
+        .notification-card.unread {
+            border-left-color: #ff9a3d;
+            background: rgba(255,154,61,0.05);
+        }
+
+        .notification-card:hover {
+            transform: translateX(5px);
+            background: rgba(255,255,255,0.15);
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .notification-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,154,61,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .notification-icon i {
+            color: #ff9a3d;
+        }
+
+        .notification-content h3 {
+            color: #ff9a3d;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .notification-content p {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .notification-meta {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        .notification-time {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .notification-type {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .type-order_update { background: rgba(255,154,61,0.2); color: #ff9a3d; }
+        .type-payment { background: rgba(25,135,84,0.2); color: #198754; }
+        .type-promotion { background: rgba(108,117,125,0.2); color: #6c757d; }
+        .type-feedback { background: rgba(13,110,253,0.2); color: #0d6efd; }
+        .type-refund { background: rgba(220,53,69,0.2); color: #dc3545; }
+        .type-verification { background: rgba(255,193,7,0.2); color: #ffc107; }
+
+        .notification-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 5px;
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .mark-read-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 3px;
+            transition: all 0.3s;
+        }
+
+        .mark-read-btn:hover {
+            color: #ff9a3d;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255,255,255,0.7);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #ff9a3d;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #ff9a3d;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+            font-size: 0.9rem;
+        }
+
+        .filter-tab:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(to right, #ff9a3d, #ff6b6b);
+            border-color: #ff9a3d;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .notification-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .notification-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            
+            nav a {
+                margin-left: 1rem;
+                padding: 6px 10px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Campus Munchies</div>
+        <nav>
+            <a href="/campusmunchies.com/"><i class="fas fa-home"></i> Home</a>
+            <a href="/campusmunchies.com/orders"><i class="fas fa-receipt"></i> My Orders</a>
+            <a href="/campusmunchies.com/notifications" class="active"><i class="fas fa-bell"></i> Notifications</a>
+            <a href="/campusmunchies.com/profile"><i class="fas fa-user"></i> Profile</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-bell"></i> Notifications</h1>
+            <div class="notification-actions">
+                <button class="btn btn-secondary" onclick="markAllAsRead()">
+                    <i class="fas fa-check-double"></i> Mark All Read
+                </button>
+                <button class="btn btn-secondary" onclick="clearAllNotifications()">
+                    <i class="fas fa-trash"></i> Clear All
+                </button>
+            </div>
+        </div>
+
+        <div class="filter-tabs">
+            <div class="filter-tab active" data-filter="all">All Notifications</div>
+            <div class="filter-tab" data-filter="unread">Unread</div>
+            <div class="filter-tab" data-filter="order_update">Order Updates</div>
+            <div class="filter-tab" data-filter="payment">Payments</div>
+            <div class="filter-tab" data-filter="promotion">Promotions</div>
+        </div>
+
+        <div id="notificationsContainer">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading notifications...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        let allNotifications = [];
+
+        // Load notifications when page loads
+        document.addEventListener('DOMContentLoaded', loadNotifications);
+
+        // Filter tabs functionality
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                filterNotifications(this.dataset.filter);
+            });
+        });
+
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/campusmunchies.com/api/notifications');
+                if (!response.ok) throw new Error('Failed to load notifications');
+                
+                const result = await response.json();
+                if (result.success) {
+                    allNotifications = result.notifications;
+                    displayNotifications(allNotifications);
+                } else {
+                    throw new Error(result.error || 'Failed to load notifications');
+                }
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+                showErrorState('Unable to load notifications. Please try refreshing the page.');
+            }
+        }
+
+        function displayNotifications(notifications) {
+            const container = document.getElementById('notificationsContainer');
+            
+            if (notifications.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-bell-slash"></i>
+                        <h3>No notifications</h3>
+                        <p>You're all caught up! New notifications will appear here.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = notifications.map(notification => `
+                <div class="notification-card ${notification.is_read ? '' : 'unread'}" data-type="${notification.type}">
+                    <button class="mark-read-btn" onclick="markAsRead(${notification.id})" title="Mark as read">
+                        <i class="fas fa-circle${notification.is_read ? '-check' : ''}"></i>
+                    </button>
+                    
+                    <div class="notification-header">
+                        <div class="notification-title">
+                            <div class="notification-icon">
+                                <i class="${getNotificationIcon(notification.type)}"></i>
+                            </div>
+                            <div class="notification-content">
+                                <h3>${escapeHtml(getNotificationTitle(notification.type))}</h3>
+                                <p>${escapeHtml(notification.message)}</p>
+                                <div class="notification-meta">
+                                    <span class="notification-time">
+                                        <i class="fas fa-clock"></i>
+                                        ${formatTimeAgo(notification.created_at)}
+                                    </span>
+                                    <span class="notification-type type-${notification.type}">
+                                        ${getNotificationTypeLabel(notification.type)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="notification-actions">
+                        ${notification.order_id ? `
+                            <button class="action-btn" onclick="viewOrder(${notification.order_id})">
+                                <i class="fas fa-eye"></i> View Order
+                            </button>
+                        ` : ''}
+                        <button class="action-btn" onclick="deleteNotification(${notification.id})">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getNotificationIcon(type) {
+            const icons = {
+                'order_update': 'fas fa-receipt',
+                'payment': 'fas fa-credit-card',
+                'promotion': 'fas fa-tag',
+                'feedback': 'fas fa-comment',
+                'refund': 'fas fa-money-bill-wave',
+                'verification': 'fas fa-shield-alt'
+            };
+            return icons[type] || 'fas fa-bell';
+        }
+
+        function getNotificationTitle(type) {
+            const titles = {
+                'order_update': 'Order Update',
+                'payment': 'Payment',
+                'promotion': 'Promotion',
+                'feedback': 'Feedback',
+                'refund': 'Refund',
+                'verification': 'Security'
+            };
+            return titles[type] || 'Notification';
+        }
+
+        function getNotificationTypeLabel(type) {
+            const labels = {
+                'order_update': 'Order Update',
+                'payment': 'Payment',
+                'promotion': 'Promotion',
+                'feedback': 'Feedback',
+                'refund': 'Refund',
+                'verification': 'Security'
+            };
+            return labels[type] || 'General';
+        }
+
+        function filterNotifications(filter) {
+            let filteredNotifications = allNotifications;
+
+            switch (filter) {
+                case 'unread':
+                    filteredNotifications = allNotifications.filter(n => !n.is_read);
+                    break;
+                case 'order_update':
+                    filteredNotifications = allNotifications.filter(n => n.type === 'order_update');
+                    break;
+                case 'payment':
+                    filteredNotifications = allNotifications.filter(n => n.type === 'payment');
+                    break;
+                case 'promotion':
+                    filteredNotifications = allNotifications.filter(n => n.type === 'promotion');
+                    break;
+                // 'all' shows everything
+            }
+
+            displayNotifications(filteredNotifications);
+        }
+
+        function formatTimeAgo(timestamp) {
+            if (!timestamp) return 'Unknown time';
+            
+            const now = new Date();
+            const time = new Date(timestamp);
+            const diffInSeconds = Math.floor((now - time) / 1000);
+
+            if (diffInSeconds < 60) return 'Just now';
+            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+            return `${Math.floor(diffInSeconds / 86400)}d ago`;
+        }
+
+        function escapeHtml(unsafe) {
+            if (unsafe === null || unsafe === undefined) return '';
+            return unsafe
+                .toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        async function markAsRead(notificationId) {
+            try {
+                const response = await fetch(`/campusmunchies.com/notifications/${notificationId}/read`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken 
+                    }
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    // Update local state
+                    const notification = allNotifications.find(n => n.id === notificationId);
+                    if (notification) {
+                        notification.is_read = true;
+                        displayNotifications(allNotifications);
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to mark as read');
+                }
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+                alert('Failed to mark notification as read. Please try again.');
+            }
+        }
+
+        async function markAllAsRead() {
+            try {
+                const response = await fetch('/campusmunchies.com/notifications/read-all', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken 
+                    }
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    // Update all notifications as read in local state
+                    allNotifications.forEach(n => n.is_read = true);
+                    displayNotifications(allNotifications);
+                } else {
+                    throw new Error(result.error || 'Failed to mark all as read');
+                }
+            } catch (error) {
+                console.error('Error marking all as read:', error);
+                alert('Failed to mark all notifications as read. Please try again.');
+            }
+        }
+
+        async function deleteNotification(notificationId) {
+            if (!confirm('Delete this notification?')) return;
+
+            try {
+                const response = await fetch(`/campusmunchies.com/notifications/${notificationId}/delete`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken 
+                    }
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    // Remove from local state
+                    allNotifications = allNotifications.filter(n => n.id !== notificationId);
+                    displayNotifications(allNotifications);
+                } else {
+                    throw new Error(result.error || 'Failed to delete notification');
+                }
+            } catch (error) {
+                console.error('Error deleting notification:', error);
+                alert('Failed to delete notification. Please try again.');
+            }
+        }
+
+        async function clearAllNotifications() {
+            if (!confirm('Clear all notifications?')) return;
+
+            try {
+                const response = await fetch('/campusmunchies.com/notifications/clear', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken 
+                    }
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    allNotifications = [];
+                    displayNotifications(allNotifications);
+                } else {
+                    throw new Error(result.error || 'Failed to clear notifications');
+                }
+            } catch (error) {
+                console.error('Error clearing notifications:', error);
+                alert('Failed to clear notifications. Please try again.');
+            }
+        }
+
+        function viewOrder(orderId) {
+            window.location.href = `/campusmunchies.com/orders/${orderId}`;
+        }
+
+        function showErrorState(message) {
+            document.getElementById('notificationsContainer').innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Something went wrong</h3>
+                    <p>${message}</p>
+                    <button class="btn" onclick="loadNotifications()" style="margin-top: 15px;">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

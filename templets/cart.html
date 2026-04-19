@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Cart - Campus Munchies</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://wallpaperaccess.com/full/5674818.jpg') no-repeat center center/cover;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            height: 70px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 1.6rem;
+            background: linear-gradient(45deg, #ff9a3d, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        nav a {
+            margin-left: 2rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 15px;
+            border-radius: 5px;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        nav a:hover {
+            color: #ff9a3d;
+            background: rgba(255,255,255,0.05);
+            transform: translateY(-2px);
+        }
+
+        .cart-badge {
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.8rem;
+            margin-left: 5px;
+            min-width: 18px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .page-header h1 {
+            color: #ff9a3d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cart-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        @media (max-width: 968px) {
+            .cart-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .cart-items {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .store-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .store-section:hover {
+            border-color: rgba(255,154,61,0.3);
+        }
+
+        .store-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .store-name {
+            color: #ff9a3d;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .store-subtotal {
+            color: rgba(255,255,255,0.8);
+            font-weight: 600;
+        }
+
+        .cart-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 15px;
+            align-items: center;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .item-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .item-details {
+            flex: 1;
+        }
+
+        .item-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+        .item-price {
+            color: #ff9a3d;
+            font-weight: 600;
+        }
+
+        .item-stock {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+            margin-top: 5px;
+        }
+
+        .stock-low {
+            color: #ff6b6b;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .quantity-btn {
+            background: #ff6b6b;
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .quantity-btn:hover {
+            background: #ff5252;
+            transform: scale(1.1);
+        }
+
+        .quantity-btn:disabled {
+            background: rgba(255,255,255,0.2);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .quantity-display {
+            font-weight: 600;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .item-total {
+            font-weight: 600;
+            color: #ff9a3d;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn-sm {
+            padding: 8px 15px;
+            font-size: 0.8rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, #ff9a3d, #ff6b6b);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,154,61,0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .cart-sidebar {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: sticky;
+            top: 100px;
+        }
+
+        .sidebar-title {
+            color: #ff9a3d;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .summary-total {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ff9a3d;
+            border-bottom: none;
+            padding-top: 10px;
+            margin-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .empty-cart i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #ff9a3d;
+        }
+
+        .empty-cart h2 {
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .empty-cart p {
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            font-size: 1.2rem;
+        }
+
+        .loading i {
+            color: #ff9a3d;
+            margin-right: 10px;
+        }
+
+        .error-message {
+            background: rgba(220,53,69,0.2);
+            border: 1px solid rgba(220,53,69,0.5);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .success-message {
+            background: rgba(40,167,69,0.2);
+            border: 1px solid rgba(40,167,69,0.5);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .notes-section {
+            margin-top: 15px;
+        }
+
+        .notes-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            color: white;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .notes-input:focus {
+            outline: none;
+            border-color: #ff9a3d;
+        }
+
+        .notes-input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .clear-cart-btn {
+            background: rgba(220,53,69,0.3);
+            color: #ff6b6b;
+            border: 1px solid rgba(220,53,69,0.5);
+            width: 100%;
+            justify-content: center;
+        }
+
+        .clear-cart-btn:hover {
+            background: rgba(220,53,69,0.5);
+        }
+
+        .continue-shopping {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #ff9a3d;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+
+        .continue-shopping:hover {
+            color: #ff6b6b;
+            transform: translateX(5px);
+        }
+
+        .store-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .store-checkout-btn {
+            background: linear-gradient(to right, #28a745, #20c997);
+            color: white;
+            padding: 12px 25px;
+            font-weight: 600;
+        }
+
+        .store-checkout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                height: auto;
+                padding: 1rem;
+            }
+
+            nav {
+                margin-top: 15px;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            nav a {
+                margin-left: 0;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .cart-item {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 10px;
+            }
+
+            .item-image {
+                justify-self: center;
+            }
+
+            .quantity-controls {
+                justify-content: center;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .store-actions {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+
+            .store-checkout-btn {
+                width: 100%;
+                text-align: center;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .store-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Campus Munchies</div>
+        <nav>
+            <a href="/campusmunchies.com/"><i class="fas fa-home"></i> Home</a>
+            <a href="/campusmunchies.com/orders"><i class="fas fa-receipt"></i> My Orders</a>
+            <a href="/campusmunchies.com/notifications"><i class="fas fa-bell"></i> Notifications</a>
+            <a href="/campusmunchies.com/profile"><i class="fas fa-user"></i> Profile</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-shopping-cart"></i> My Cart</h1>
+        </div>
+
+        <div id="message-container"></div>
+
+        <div class="cart-content">
+            <div class="cart-main">
+                <div id="cart-container">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading your cart...
+                    </div>
+                </div>
+            </div>
+
+            <div class="cart-sidebar">
+                <h3 class="sidebar-title">Order Summary</h3>
+                <div class="summary-row">
+                    <span>Items:</span>
+                    <span id="summary-item-count">0</span>
+                </div>
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span id="summary-subtotal">R0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Delivery:</span>
+                    <span>Calculated at checkout</span>
+                </div>
+                <div class="summary-row summary-total">
+                    <span>Total:</span>
+                    <span id="summary-total">R0.00</span>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn clear-cart-btn" id="clear-cart-btn">
+                        <i class="fas fa-trash"></i> Clear Cart
+                    </button>
+                </div>
+
+                <a href="/campusmunchies.com/" class="continue-shopping">
+                    <i class="fas fa-arrow-left"></i> Continue Shopping
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear Cart Confirmation Modal -->
+    <div id="clearCartModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #ff9a3d; margin-bottom: 20px;">
+                <i class="fas fa-exclamation-triangle"></i> Clear Cart
+            </h3>
+            <p style="margin-bottom: 20px; line-height: 1.6;">
+                Are you sure you want to clear your entire cart? This action cannot be undone.
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" id="cancelClearBtn">Cancel</button>
+                <button class="btn btn-danger" id="confirmClearBtn">Clear Cart</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cartContainer = document.getElementById('cart-container');
+            const messageContainer = document.getElementById('message-container');
+            const clearCartBtn = document.getElementById('clear-cart-btn');
+            const clearCartModal = document.getElementById('clearCartModal');
+            const cancelClearBtn = document.getElementById('cancelClearBtn');
+            const confirmClearBtn = document.getElementById('confirmClearBtn');
+            
+            // Summary elements
+            const summaryItemCount = document.getElementById('summary-item-count');
+            const summarySubtotal = document.getElementById('summary-subtotal');
+            const summaryTotal = document.getElementById('summary-total');
+
+            // Get CSRF token from meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            let cartData = null;
+
+            // Load cart on page load
+            loadCart();
+
+            // Event listeners
+            clearCartBtn.addEventListener('click', showClearCartModal);
+            cancelClearBtn.addEventListener('click', hideClearCartModal);
+            confirmClearBtn.addEventListener('click', clearCart);
+
+            // Close modal when clicking outside
+            clearCartModal.addEventListener('click', function(e) {
+                if (e.target === clearCartModal) {
+                    hideClearCartModal();
+                }
+            });
+
+            async function loadCart() {
+                try {
+                    showLoading();
+                    const response = await fetch('/campusmunchies.com/api/cart', {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        credentials: 'same-origin' // Include cookies for session
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to load cart');
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        cartData = data.cart;
+                        renderCart();
+                    } else {
+                        throw new Error(data.error || 'Failed to load cart');
+                    }
+                } catch (error) {
+                    console.error('Error loading cart:', error);
+                    showError('Failed to load cart. Please try again.');
+                    showEmptyCart();
+                }
+            }
+
+            function renderCart() {
+                if (!cartData || cartData.stores.length === 0) {
+                    showEmptyCart();
+                    return;
+                }
+
+                let totalItems = 0;
+                let grandTotal = 0;
+
+                const cartHTML = cartData.stores.map(store => {
+                    const storeTotal = store.items.reduce((sum, item) => {
+                        const itemTotal = item.price * item.quantity;
+                        totalItems++;
+                        grandTotal += itemTotal;
+                        return sum + itemTotal;
+                    }, 0);
+
+                    const storeItemsHTML = store.items.map(item => {
+                        const itemTotal = item.price * item.quantity;
+                        const isLowStock = item.stock_quantity < 5;
+                        const maxQuantity = Math.min(item.stock_quantity, 10);
+
+                        return `
+                            <div class="cart-item" data-item-id="${item.item_id}">
+                                ${item.image_url ? 
+                                    `<img src="${item.image_url}" alt="${item.name}" class="item-image">` :
+                                    `<div class="item-image" style="display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-utensils" style="color: rgba(255,255,255,0.5);"></i>
+                                    </div>`
+                                }
+                                <div class="item-details">
+                                    <div class="item-name">${escapeHtml(item.name)}</div>
+                                    <div class="item-price">${formatPrice(item.price)} each</div>
+                                    <div class="item-stock ${isLowStock ? 'stock-low' : ''}">
+                                        ${isLowStock ? 
+                                            `Only ${item.stock_quantity} left in stock` : 
+                                            `${item.stock_quantity} available`
+                                        }
+                                    </div>
+                                    ${item.notes ? `
+                                        <div class="item-notes" style="margin-top: 5px; font-size: 0.8rem; color: rgba(255,255,255,0.7);">
+                                            <i class="fas fa-sticky-note"></i> ${escapeHtml(item.notes)}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div class="quantity-controls">
+                                    <button class="quantity-btn" onclick="updateQuantity(${item.cart_id}, ${item.quantity - 1})" 
+                                        ${item.quantity <= 1 ? 'disabled' : ''}>
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <span class="quantity-display">${item.quantity}</span>
+                                    <button class="quantity-btn" onclick="updateQuantity(${item.cart_id}, ${item.quantity + 1})"
+                                        ${item.quantity >= maxQuantity ? 'disabled' : ''}>
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div class="item-total">${formatPrice(itemTotal)}</div>
+                                <div class="item-actions">
+                                    <button class="btn btn-danger btn-sm" onclick="removeItem(${item.cart_id})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="notes-section">
+                                    <textarea class="notes-input" placeholder="Add special instructions..." 
+                                        onchange="updateItemNotes(${item.cart_id}, this.value)">${item.notes || ''}</textarea>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div class="store-section">
+                            <div class="store-header">
+                                <div class="store-name">${escapeHtml(store.store_name)}</div>
+                                <div class="store-subtotal">Store Total: ${formatPrice(store.subtotal)}</div>
+                            </div>
+                            <div class="store-items">
+                                ${storeItemsHTML}
+                            </div>
+                            <div class="store-actions">
+                                <a href="/campusmunchies.com/${store.store_name.toLowerCase()}/menu" class="btn btn-secondary">
+                                    <i class="fas fa-plus"></i> Add More Items
+                                </a>
+                                <button class="btn store-checkout-btn" onclick="proceedToStoreCheckout('${store.store_name}')">
+                                    <i class="fas fa-lock"></i> Checkout ${store.store_name}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                cartContainer.innerHTML = cartHTML;
+                updateSummary(totalItems, grandTotal);
+            }
+
+            function updateSummary(items, total) {
+                summaryItemCount.textContent = `${items} ${items === 1 ? 'item' : 'items'}`;
+                summarySubtotal.textContent = formatPrice(total);
+                summaryTotal.textContent = formatPrice(total);
+            }
+
+            function showEmptyCart() {
+                cartContainer.innerHTML = `
+                    <div class="empty-cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <h2>Your Cart is Empty</h2>
+                        <p>Looks like you haven't added any items to your cart yet.</p>
+                        <a href="/campusmunchies.com/" class="btn btn-primary">
+                            <i class="fas fa-utensils"></i> Browse Restaurants
+                        </a>
+                    </div>
+                `;
+                updateSummary(0, 0);
+            }
+
+            function showLoading() {
+                cartContainer.innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading your cart...
+                    </div>
+                `;
+            }
+
+            async function updateQuantity(cartId, newQuantity) {
+                if (newQuantity < 1) return;
+
+                try {
+                    const response = await fetch(`/campusmunchies.com/api/cart/update/${cartId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ quantity: newQuantity }),
+                        credentials: 'same-origin'
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        showSuccess('Cart updated successfully');
+                        loadCart(); // Reload cart to get updated data
+                    } else {
+                        throw new Error(data.error || 'Failed to update quantity');
+                    }
+                } catch (error) {
+                    console.error('Error updating quantity:', error);
+                    showError(error.message || 'Failed to update quantity. Please try again.');
+                }
+            }
+
+            async function removeItem(cartId) {
+                if (!confirm('Remove this item from your cart?')) return;
+
+                try {
+                    const response = await fetch(`/campusmunchies.com/api/cart/remove/${cartId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        showSuccess('Item removed from cart');
+                        loadCart(); // Reload cart
+                    } else {
+                        throw new Error(data.error || 'Failed to remove item');
+                    }
+                } catch (error) {
+                    console.error('Error removing item:', error);
+                    showError(error.message || 'Failed to remove item. Please try again.');
+                }
+            }
+
+            async function updateItemNotes(cartId, notes) {
+                try {
+                    const response = await fetch(`/campusmunchies.com/api/cart/update/${cartId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ notes: notes }),
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to update notes');
+                    }
+
+                    // No need to show message for notes update
+                } catch (error) {
+                    console.error('Error updating notes:', error);
+                }
+            }
+
+            function proceedToStoreCheckout(storeName) {
+                if (!cartData || cartData.stores.length === 0) {
+                    showError('Your cart is empty');
+                    return;
+                }
+
+                // Match the Flask route structure: /campusmunchies.com/<store_name>/checkout
+                const cleanStoreName = storeName.toLowerCase().replace(/\s+/g, '-');
+                window.location.href = `/campusmunchies.com/${cleanStoreName}/checkout`;
+            }
+
+            function showClearCartModal() {
+                if (!cartData || cartData.stores.length === 0) {
+                    showError('Your cart is already empty');
+                    return;
+                }
+                clearCartModal.style.display = 'flex';
+            }
+
+            function hideClearCartModal() {
+                clearCartModal.style.display = 'none';
+            }
+
+            async function clearCart() {
+                try {
+                    const response = await fetch('/campusmunchies.com/api/cart/clear', {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        showSuccess('Cart cleared successfully');
+                        hideClearCartModal();
+                        loadCart(); // Reload to show empty state
+                    } else {
+                        throw new Error(data.error || 'Failed to clear cart');
+                    }
+                } catch (error) {
+                    console.error('Error clearing cart:', error);
+                    showError(error.message || 'Failed to clear cart. Please try again.');
+                }
+            }
+
+            function showError(message) {
+                messageContainer.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Error:</strong> ${message}
+                    </div>
+                `;
+                setTimeout(() => {
+                    messageContainer.innerHTML = '';
+                }, 5000);
+            }
+
+            function showSuccess(message) {
+                messageContainer.innerHTML = `
+                    <div class="success-message">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Success:</strong> ${message}
+                    </div>
+                `;
+                setTimeout(() => {
+                    messageContainer.innerHTML = '';
+                }, 3000);
+            }
+
+            function formatPrice(price) {
+                return `R${parseFloat(price).toFixed(2)}`;
+            }
+
+            function escapeHtml(unsafe) {
+                if (unsafe === null || unsafe === undefined) return '';
+                return unsafe
+                    .toString()
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            // Make functions available globally for onclick handlers
+            window.updateQuantity = updateQuantity;
+            window.removeItem = removeItem;
+            window.updateItemNotes = updateItemNotes;
+            window.proceedToStoreCheckout = proceedToStoreCheckout;
+        });
+    </script>
+</body>
+</html>
